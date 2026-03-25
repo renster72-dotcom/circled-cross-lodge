@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Circled Cross Lodge</title>
+
+<style>
+body {
+background:#000;
+color:#eee;
+font-family:Georgia;
+text-align:center;
+margin:0;
+}
+
+h1 {color:gold;}
+
+button {
+padding:10px;
+margin:5px;
+background:#111;
+color:#fff;
+border:1px solid gold;
+}
+
+#tree {
+width:100%;
+max-width:600px;
+display:block;
+margin:auto;
+}
+
+.line {stroke:#888;stroke-width:2;}
+.glow {stroke:gold !important;stroke-width:4;}
+.node {fill:gold;}
+
+#info {
+background:#111;
+padding:10px;
+min-height:100px;
+}
+
+.grid {
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+gap:10px;
+padding:10px;
+}
+
+.card {
+background:#111;
+border:1px solid gold;
+padding:10px;
+}
+
+#tarotPage,#runesPage,#quizPage {display:none;}
+</style>
+</head>
+
+<body>
+
+<h1>Circled Cross Lodge</h1>
+
+<button onclick="showPage('treePage')">Tree</button>
+<button onclick="showPage('tarotPage')">Tarot</button>
+<button onclick="showPage('runesPage')">Runes</button>
+<button onclick="startQuiz()">Quiz</button>
+
+<div id="treePage">
+<svg id="tree" viewBox="0 0 600 820"></svg>
+<div id="info">Tap something</div>
+</div>
+
+<div id="tarotPage"><div id="tarot" class="grid"></div></div>
+<div id="runesPage"><div id="runes" class="grid"></div></div>
+
+<div id="quizPage">
+<h2>Quiz</h2>
+<div id="q"></div>
+<div id="answers"></div>
+<div id="score"></div>
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+// ---------- ELEMENTS ----------
+const svg = document.getElementById("tree");
+const info = document.getElementById("info");
+const tarotDiv = document.getElementById("tarot");
+const runesDiv = document.getElementById("runes");
+const qDiv = document.getElementById("q");
+const answersDiv = document.getElementById("answers");
+const scoreDiv = document.getElementById("score");
+
+// ---------- TREE ----------
+const pos = [
+[300,60],[150,180],[450,180],
+[150,340],[450,340],[300,340],
+[180,540],[420,540],
+[300,680],[300,780]
+];
+
+const names = [
+"Kether","Chokmah","Binah","Chesed","Geburah",
+"Tiphereth","Netzach","Hod","Yesod","Malkuth"
+];
+
+const paths = [
+[0,1,"א"],[0,2,"ב"],[1,2,"ג"],[1,3,"ד"],
+[2,4,"ה"],[3,5,"ו"],[4,5,"ז"],[1,5,"ח"],
+[2,5,"ט"],[3,4,"י"],[5,6,"כ"],[5,7,"ל"],
+[6,7,"מ"],[6,8,"נ"],[7,8,"ס"],[8,9,"ע"],
+[3,6,"פ"],[4,7,"צ"],[5,8,"ק"],[2,6,"ר"],
+[1,7,"ש"],[0,5,"ת"]
+];
+
+let lines = [];
+
+// DRAW PATHS
+paths.forEach(p=>{
+let l=document.createElementNS("http://www.w3.org/2000/svg","line");
+l.setAttribute("x1",pos[p[0]][0]);
+l.setAttribute("y1",pos[p[0]][1]);
+l.setAttribute("x2",pos[p[1]][0]);
+l.setAttribute("y2",pos[p[1]][1]);
+l.setAttribute("class","line");
+
+l.addEventListener("click", function(){
+lines.forEach(x=>x.classList.remove("glow"));
+l.classList.add("glow");
+info.textContent="Path "+p[2];
+});
+
+svg.appendChild(l);
+lines.push(l);
+
+// LETTER
+let t=document.createElementNS("http://www.w3.org/2000/svg","text");
+t.setAttribute("x",(pos[p[0]][0]+pos[p[1]][0])/2);
+t.setAttribute("y",(pos[p[0]][1]+pos[p[1]][1])/2);
+t.setAttribute("fill","white");
+t.textContent=p[2];
+svg.appendChild(t);
+});
+
+// DRAW NODES
+pos.forEach((p,i)=>{
+let c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+c.setAttribute("cx",p[0]);
+c.setAttribute("cy",p[1]);
+c.setAttribute("r",25);
+c.setAttribute("class","node");
+
+c.addEventListener("click", function(){
+info.textContent=names[i];
+});
+
+svg.appendChild(c);
+});
+
+// ---------- TAROT ----------
+const tarot = [
+"Fool","Magician","High Priestess","Empress","Emperor","Hierophant",
+"Lovers","Chariot","Strength","Hermit","Wheel","Justice",
+"Hanged Man","Death","Temperance","Devil","Tower","Star",
+"Moon","Sun","Judgement","World"
+];
+
+tarot.forEach(t=>{
+let c=document.createElement("div");
+c.className="card";
+c.textContent=t;
+tarotDiv.appendChild(c);
+});
+
+// ---------- RUNES ----------
+const runes = ["ᚠ","ᚢ","ᚦ","ᚨ","ᚱ","ᚲ","ᚷ","ᚹ","ᚺ","ᚾ","ᛁ","ᛃ","ᛇ","ᛈ","ᛉ","ᛋ","ᛏ","ᛒ","ᛖ","ᛗ","ᛚ","ᛜ","ᛞ","ᛟ"];
+
+runes.forEach(r=>{
+let c=document.createElement("div");
+c.className="card";
+c.innerHTML="<div style='font-size:30px'>"+r+"</div>";
+runesDiv.appendChild(c);
+});
+
+// ---------- QUIZ ----------
+let score=0;
+
+window.startQuiz = function(){
+showPage("quizPage");
+score=0;
+nextQ();
+};
+
+function nextQ(){
+let correct = tarot[Math.floor(Math.random()*tarot.length)];
+qDiv.innerHTML="Which card is: <b>"+correct+"</b>?";
+
+let opts=[correct,...tarot.sort(()=>Math.random()-0.5).slice(0,3)];
+
+answersDiv.innerHTML="";
+opts.forEach(o=>{
+let b=document.createElement("button");
+b.textContent=o;
+b.onclick=function(){
+if(o===correct) score++;
+scoreDiv.textContent="Score: "+score;
+nextQ();
+};
+answersDiv.appendChild(b);
+});
+}
+
+// ---------- NAV ----------
+window.showPage = function(p){
+["treePage","tarotPage","runesPage","quizPage"].forEach(id=>{
+document.getElementById(id).style.display="none";
+});
+document.getElementById(p).style.display="block";
+};
+
+});
+
+</script>
+
+</body>
+</html>
